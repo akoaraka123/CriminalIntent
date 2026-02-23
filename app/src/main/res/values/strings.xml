@@ -2,4 +2,7 @@
     <string name="app_name">CriminalIntent</string>
     <string name="crime_title_hint">Enter a title for the crime</string>
     <string name="crime_solved_label">Solved</string>
+    <string name="save">SAVE</string>
+    <string name="contact_police">CONTACT POLICE</string>
+    <string name="contact_police_toast">CONTACT POLICE</string>
 </resources>
