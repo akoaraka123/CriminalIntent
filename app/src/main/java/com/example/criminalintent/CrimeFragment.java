@@ -1,5 +1,6 @@
 package com.example.criminalintent;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,6 +20,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
+import androidx.core.content.ContextCompat;
 import androidx.core.app.ShareCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -31,6 +33,7 @@ public class CrimeFragment extends Fragment {
     private static final String DIALOG_DATE = "DialogDate";
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_CONTACT = 1;
+    private static final int REQUEST_READ_CONTACTS = 2;
 
     private Crime mCrime;
     private EditText titleField;
@@ -38,8 +41,12 @@ public class CrimeFragment extends Fragment {
     private CheckBox solvedCheckBox;
     private Button saveButton;
     private Button mSuspectButton;
+    private Button mCallSuspectButton;
     private Button mReportButton;
     private TextView mStatusTextView;
+
+    private boolean mPendingPickContact;
+    private String mSuspectPhoneNumber;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -77,6 +84,7 @@ public class CrimeFragment extends Fragment {
         solvedCheckBox = view.findViewById(R.id.crime_solved);
         saveButton = view.findViewById(R.id.crime_save);
         mSuspectButton = view.findViewById(R.id.crime_suspect);
+        mCallSuspectButton = view.findViewById(R.id.crime_call_suspect);
         mReportButton = view.findViewById(R.id.crime_report);
         mStatusTextView = view.findViewById(R.id.crime_status);
 
@@ -139,11 +147,19 @@ public class CrimeFragment extends Fragment {
         final Intent pickContact = new Intent(Intent.ACTION_PICK,
                 ContactsContract.Contacts.CONTENT_URI);
 
+        final Intent dialIntent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"));
+
         PackageManager pm = requireActivity().getPackageManager();
         if (pm.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null) {
             mSuspectButton.setEnabled(false);
         } else {
             mSuspectButton.setEnabled(true);
+        }
+
+        if (pm.resolveActivity(dialIntent, PackageManager.MATCH_DEFAULT_ONLY) == null) {
+            mCallSuspectButton.setEnabled(false);
+        } else {
+            mCallSuspectButton.setEnabled(mSuspectPhoneNumber != null);
         }
 
         if (mCrime.getSuspect() != null) {
@@ -153,11 +169,48 @@ public class CrimeFragment extends Fragment {
         mSuspectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    mPendingPickContact = true;
+                    requestPermissions(new String[] { Manifest.permission.READ_CONTACTS }, REQUEST_READ_CONTACTS);
+                    return;
+                }
+
                 startActivityForResult(pickContact, REQUEST_CONTACT);
             }
         });
 
+        mCallSuspectButton.setOnClickListener(v -> {
+            if (mSuspectPhoneNumber == null) {
+                return;
+            }
+
+            Uri number = Uri.parse("tel:" + Uri.encode(mSuspectPhoneNumber));
+            Intent intent = new Intent(Intent.ACTION_DIAL, number);
+            if (pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                startActivity(intent);
+            }
+        });
+
         return view;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_READ_CONTACTS) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (granted && mPendingPickContact) {
+                mPendingPickContact = false;
+                Intent pickContact = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+                if (requireActivity().getPackageManager().resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                    startActivityForResult(pickContact, REQUEST_CONTACT);
+                }
+            } else {
+                mPendingPickContact = false;
+            }
+        }
     }
 
     private String getCrimeReport() {
@@ -205,7 +258,10 @@ public class CrimeFragment extends Fragment {
         if (requestCode == REQUEST_CONTACT && data != null) {
             Uri contactUri = data.getData();
 
-            String[] queryFields = new String[] { ContactsContract.Contacts.DISPLAY_NAME };
+            String[] queryFields = new String[] {
+                    ContactsContract.Contacts.DISPLAY_NAME,
+                    ContactsContract.Contacts._ID
+            };
 
             Cursor cursor = requireActivity()
                     .getContentResolver()
@@ -217,15 +273,59 @@ public class CrimeFragment extends Fragment {
                 }
 
                 cursor.moveToFirst();
-                String suspect = cursor.getString(0);
+                int nameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
+                int idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+
+                String suspect = nameIndex >= 0 ? cursor.getString(nameIndex) : null;
+                String contactId = idIndex >= 0 ? cursor.getString(idIndex) : null;
 
                 mCrime.setSuspect(suspect);
                 mSuspectButton.setText(suspect);
+
+                mSuspectPhoneNumber = null;
+                if (contactId != null) {
+                    mSuspectPhoneNumber = getPhoneNumberForContact(contactId);
+                }
+
+                Intent dialCheck = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"));
+                if (requireActivity().getPackageManager().resolveActivity(dialCheck, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                    mCallSuspectButton.setEnabled(mSuspectPhoneNumber != null);
+                }
 
             } finally {
                 if (cursor != null) {
                     cursor.close();
                 }
+            }
+        }
+    }
+
+    private String getPhoneNumberForContact(String contactId) {
+        Cursor cursor = null;
+        try {
+            cursor = requireActivity().getContentResolver().query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    new String[] { ContactsContract.CommonDataKinds.Phone.NUMBER },
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                    new String[] { contactId },
+                    null
+            );
+
+            if (cursor == null || cursor.getCount() == 0) {
+                return null;
+            }
+
+            cursor.moveToFirst();
+            int numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+            if (numberIndex < 0) {
+                return null;
+            }
+
+            String number = cursor.getString(numberIndex);
+            return (number == null || number.trim().isEmpty()) ? null : number.trim();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
             }
         }
     }
