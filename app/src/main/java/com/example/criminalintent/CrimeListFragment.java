@@ -51,6 +51,13 @@ public class CrimeListFragment extends Fragment {
                                 ? R.string.hide_subtitle
                                 : R.string.show_subtitle);
                     }
+                    
+                    // Hide add button when crime count reaches 10
+                    MenuItem addCrimeItem = menu.findItem(R.id.new_crime);
+                    if (addCrimeItem != null) {
+                        int crimeCount = CrimeLab.get(requireActivity()).getCrimes().size();
+                        addCrimeItem.setVisible(crimeCount < 10);
+                    }
                 }
 
                 @Override
@@ -114,6 +121,9 @@ public class CrimeListFragment extends Fragment {
             mAdapter.notifyDataSetChanged();
         }
         updateSubtitle();
+        
+        // Refresh menu to update add button visibility based on crime count
+        requireActivity().invalidateOptionsMenu();
     }
 
     private void updateSubtitle() {

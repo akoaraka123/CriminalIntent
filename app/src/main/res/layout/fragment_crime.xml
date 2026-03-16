@@ -50,25 +50,33 @@
         android:id="@+id/crime_save"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SAVE" />
+        android:layout_marginTop="8dp"
+        android:text="SAVE"
+        android:backgroundTint="@color/secondary_green"
+        android:textColor="@color/text_on_secondary"
+        android:fontFamily="sans-serif-medium"
+        style="@style/Widget.MaterialComponents.Button" />
 
     <Button
         android:id="@+id/crime_suspect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/crime_suspect_text" />
+        android:text="@string/crime_suspect_text"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
     <Button
         android:id="@+id/crime_call_suspect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/crime_call_suspect_text" />
+        android:text="@string/crime_call_suspect_text"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
     <Button
         android:id="@+id/crime_report"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/crime_report_text" />
+        android:text="@string/crime_report_text"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
     </LinearLayout>
 

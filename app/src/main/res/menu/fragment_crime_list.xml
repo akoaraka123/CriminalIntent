@@ -6,7 +6,8 @@
         android:id="@+id/new_crime"
         android:icon="@android:drawable/ic_input_add"
         android:title="@string/new_crime"
-        app:showAsAction="ifRoom|withText" />
+        app:iconTint="@color/text_on_primary"
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/show_subtitle"

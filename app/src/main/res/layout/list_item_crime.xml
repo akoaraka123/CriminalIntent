@@ -3,13 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="8dp">
+    android:background="@color/card_background"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    android:elevation="2dp"
+    android:foreground="?android:attr/selectableItemBackground">
 
     <TextView
         android:id="@+id/crime_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="normal"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
         app:layout_constraintEnd_toStartOf="@id/crime_solved"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -18,7 +29,12 @@
         android:id="@+id/crime_date"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif"
         app:layout_constraintEnd_toStartOf="@id/crime_solved"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/crime_title" />
@@ -27,10 +43,11 @@
         android:id="@+id/crime_solved"
         android:layout_width="24dp"
         android:layout_height="24dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginStart="12dp"
         android:contentDescription="@string/crime_solved_label"
         android:src="@drawable/handcuffs"
         android:visibility="gone"
+        android:tint="@color/secondary_green"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
